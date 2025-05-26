@@ -6,6 +6,9 @@ def load_data():
     mvps = pd.read_csv("mvps.csv")
     players = pd.read_csv("players.csv")
     teams = pd.read_csv("teams.csv")
+    print(f"MVP data: {mvps.shape}")
+    print(f"Player data: {players.shape}")
+    print(f"Team data: {teams.shape}")
     return mvps, players, teams
 
 def clean_mvps_data(mvps):
@@ -13,6 +16,7 @@ def clean_mvps_data(mvps):
     print("Cleaning MVP data...")
     # Keep only relevant columns
     mvps = mvps[["Player", "Year", "Pts Won", "Pts Max", "Share"]]
+    print(f"MVP data after cleaning: {mvps.shape}")
     return mvps
 
 def clean_players_data(players):
@@ -27,6 +31,7 @@ def clean_players_data(players):
     # Remove asterisks from player names
     players["Player"] = players["Player"].str.replace("*", "", regex=False)
     
+    print(f"Player data after cleaning: {players.shape}")
     return players
 
 def handle_multiple_teams(df):
@@ -53,6 +58,7 @@ def handle_multiple_teams(df):
     players_clean.index = players_clean.index.droplevel()
     players_clean.index = players_clean.index.droplevel()
     
+    print(f"Player data after handling multiple teams: {players_clean.shape}")
     return players_clean
 
 def merge_data(players, mvps):
@@ -63,6 +69,7 @@ def merge_data(players, mvps):
     # Fill NaN values in MVP columns with 0
     combined[["Pts Won", "Pts Max", "Share"]] = combined[["Pts Won", "Pts Max", "Share"]].fillna(0)
     
+    print(f"Combined data shape: {combined.shape}")
     return combined
 
 def add_team_names(combined):
@@ -71,17 +78,27 @@ def add_team_names(combined):
     
     # Load nicknames mapping
     nicknames = {}
-    with open("nicknames.csv") as f:
-        lines = f.readlines()
-        for line in lines:
-            if line.strip():  # Skip empty lines
-                parts = line.replace("\n", "").split(",")
-                if len(parts) >= 2:
-                    abbrev = parts[0].strip()
-                    name = parts[1].strip()
-                    nicknames[abbrev] = name
+    try:
+        with open("nicknames.csv") as f:
+            lines = f.readlines()
+            for line in lines:
+                if line.strip():  # Skip empty lines
+                    parts = line.replace("\n", "").split(",")
+                    if len(parts) >= 2:
+                        abbrev = parts[0].strip()
+                        name = parts[1].strip()
+                        nicknames[abbrev] = name
+        print(f"Loaded {len(nicknames)} team mappings")
+    except FileNotFoundError:
+        print("Warning: nicknames.csv not found. Please create this file.")
+        return combined
     
     combined["Team"] = combined["Tm"].map(nicknames)
+    
+    # Check for unmapped teams
+    unmapped = combined[combined["Team"].isnull()]["Tm"].unique()
+    if len(unmapped) > 0:
+        print(f"Warning: Unmapped teams found: {unmapped}")
     
     return combined
 
@@ -96,22 +113,35 @@ def merge_team_data(combined, teams):
     # Remove asterisks and playoff indicators from team names
     teams["Team"] = teams["Team"].str.replace("*", "", regex=False)
     
-    # Filter out division headers
-    teams = teams[~teams["W"].str.contains("Division", na=False)]
+    # Filter out division headers and other non-team rows
+    teams = teams[~teams["W"].astype(str).str.contains("Division", na=False)]
+    teams = teams[~teams["W"].astype(str).str.contains("Conference", na=False)]
     
     # Convert data types
     teams = teams.apply(pd.to_numeric, errors='ignore')
     
     # Handle GB column (Games Behind) - replace "—" with 0
-    teams["GB"] = pd.to_numeric(teams["GB"].str.replace("—", "0"))
+    if "GB" in teams.columns:
+        teams["GB"] = teams["GB"].astype(str).str.replace("—", "0")
+        teams["GB"] = pd.to_numeric(teams["GB"], errors='coerce').fillna(0)
     
     # Merge with combined data
-    train = combined.merge(teams, how="outer", on=["Team", "Year"])
+    before_merge = combined.shape[0]
+    train = combined.merge(teams, how="left", on=["Team", "Year"])
+    after_merge = train.shape[0]
+    
+    print(f"Rows before team merge: {before_merge}")
+    print(f"Rows after team merge: {after_merge}")
+    print(f"Final dataset shape: {train.shape}")
     
     return train
 
 def main():
     """Main function to process all data"""
+    print("="*60)
+    print("STARTING DATA PROCESSING FOR NBA MVP PREDICTION")
+    print("="*60)
+    
     # Load data
     mvps, players, teams = load_data()
     
@@ -140,11 +170,21 @@ def main():
     train.to_csv("player_mvp_stats.csv", index=False)
     print("Final dataset saved to player_mvp_stats.csv")
     
-    # Print some basic info
+    # Print summary statistics
+    print("\n" + "="*50)
+    print("DATA PROCESSING SUMMARY")
+    print("="*50)
     print(f"Final dataset shape: {train.shape}")
     print(f"Years covered: {train['Year'].min()} to {train['Year'].max()}")
-    print(f"Number of players: {train['Player'].nunique()}")
+    print(f"Number of unique players: {train['Player'].nunique()}")
     print(f"MVP winners in dataset: {len(train[train['Share'] > 0.5])}")
+    print(f"Players with MVP votes: {len(train[train['Share'] > 0])}")
+    
+    # Show years with data
+    years_available = sorted(train['Year'].unique())
+    print(f"Years with data: {years_available}")
+    
+    print("\nData processing completed successfully!")
 
 if __name__ == "__main__":
     main()
