@@ -29,8 +29,8 @@ The project uses three main data sources from Basketball Reference:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/nba-mvp-prediction.git
-cd nba-mvp-prediction
+git clone https://github.com/Martinnnnnns/nbaMVPPredictor
+cd nbaMVPPredictor
 ```
 
 2. Install required packages:
@@ -93,13 +93,6 @@ The models are evaluated using Average Precision for top-5 MVP candidates:
 - **Ridge with Ratios**: Enhanced with year-normalized ratio features
 - **Random Forest**: Uses categorical encodings for recent years
 
-## Key Features Used
-
-The model considers 33+ predictor variables including:
-- **Basic Stats**: Points, assists, rebounds, steals, blocks
-- **Advanced Stats**: Shooting percentages, efficiency metrics
-- **Team Performance**: Wins, losses, win percentage, strength of schedule
-- **Ratio Features**: Year-normalized performance metrics
 
 ## Output Files
 
@@ -127,46 +120,6 @@ The analysis reveals key predictive factors for MVP selection:
 - Internet connection (for data scraping)
 - See `requirements.txt` for full package list
 
-## Data Sources
-
-All data is scraped from [Basketball Reference](https://www.basketball-reference.com/), including:
-- MVP voting results by year
-- Player per-game statistics
-- Team standings and performance metrics
-
-## Limitations
-
-- Requires manual ChromeDriver setup
-- Dependent on Basketball Reference website structure
-- Historical data only (predictions are retrospective)
-- Does not account for narrative factors in MVP voting
-
-## Future Improvements
-
-- Add playoff performance metrics
-- Incorporate advanced analytics (BPM, VORP, etc.)
-- Include media sentiment analysis
-- Real-time prediction capabilities
-- Web interface for predictions
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Create a Pull Request
-
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- Basketball Reference for providing comprehensive NBA data
-- The NBA for creating an amazing sport with rich statistical data
-- The open-source community for the tools and libraries used
-
-## Contact
-
-For questions or suggestions, please open an issue or contact [your-email@example.com]
